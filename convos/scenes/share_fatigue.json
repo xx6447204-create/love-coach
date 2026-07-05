@@ -1,0 +1,21 @@
+{
+  "id": "share_fatigue",
+  "name": "分享疲惫",
+  "description": "女生说今天很累",
+  "goal": "接住情绪",
+  "strategy": {
+    "preferred_blocks": [
+      "empathy"
+    ],
+    "avoid": [
+      "建议",
+      "分析",
+      "追问"
+    ]
+  },
+  "examples": [
+    "辛苦一天了",
+    "今天先别硬撑",
+    "抱抱，早点休息"
+  ]
+}
