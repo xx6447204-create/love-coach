@@ -1,51 +1,309 @@
-// api/chat.js
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恋爱军师</title>
+    <!-- 引入 Font Awesome 图标库，用于支持星芒图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f6f8; 
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-export default async function handler(req, res) {
-    // 1. 只允许 POST 请求
-    if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, message: "只支持 POST 请求" });
-    }
+        /* 顶部标题区域 */
+        .header-container {
+            text-align: center;
+            margin-top: 35px;     
+            margin-bottom: 20px;  
+        }
 
-    const { userInput } = req.body;
+        /* 大标题：融合了图标与文字居中，并 100% 还原 image_26de41.png 的暗梅紫颜色 */
+        .header-title-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px; /* 图标和文字的间距 */
+            /* 精准提取原图的经典暗梅紫色号 */
+            color: #8a4b7c; 
+        }
 
-    if (!userInput) {
-        return res.status(400).json({ success: false, message: "内容不能为空" });
-    }
+        .header-title-wrapper i {
+            font-size: 30px; /* 图标大小与文字呼应 */
+        }
 
-    try {
-        // 2. 调用 DeepSeek API
-        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: 'deepseek-chat',
-                messages: [
-                    { 
-                        role: 'system', 
-                        content: '你是顶级恋爱军师。请分析用户输入的潜台词，判断是否为测试，并给出犀利、实用的回复。必须严格返回如下 JSON 格式：{"analysis": "简短犀利的潜台词分析", "isTest": "是/否", "replies": [{"style": "幽默风", "content": "..."}, {"style": "高冷风", "content": "..."}]}' 
-                    },
-                    { role: 'user', content: userInput }
-                ],
-                response_format: { type: 'json_object' }
-            })
-        });
+        .header-container h1 {
+            font-size: 32px;
+            color: inherit; /* 继承外层的暗梅紫色 */
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
 
-        const data = await response.json();
+        /* 副标题：优雅的中灰色 */
+        .header-container p {
+            font-size: 14px;      
+            color: #4a5568;       
+            margin: 8px 0 0 0;
+            font-weight: 500;
+        }
+
+        /* 白色卡片容器 */
+        .card-container {
+            background-color: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.03), 0 5px 15px rgba(0, 0, 0, 0.02);
+            width: 90%;
+            max-width: 580px;
+            padding: 28px;
+            box-sizing: border-box;
+        }
+
+        /* 输入提示标签 */
+        .input-label {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #1e1b4b; 
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        .input-label i {
+            margin-right: 8px;
+            color: #6366f1; 
+            font-size: 18px;
+        }
+
+        /* 输入框形态 */
+        textarea {
+            width: 100%;
+            height: 130px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc; 
+            border-radius: 16px;
+            font-size: 15px;
+            color: #334155;
+            resize: none;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        textarea:focus {
+            border-color: #3b82f6;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+        }
+
+        /* 绝杀按钮 */
+        .submit-btn {
+            width: 100%;
+            background-color: #2b5297; 
+            color: #ffffff;
+            border: none;
+            border-radius: 100px; 
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            background-color: #20407a;
+        }
+
+        .submit-btn i {
+            color: #f59e0b; 
+            font-size: 17px;
+        }
+
+        /* 结果区域样式 */
+        .result-box {
+            margin-top: 24px;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 20px;
+            display: none;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #2b5297;
+            margin: 16px 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .analysis-text {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.6;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 0;
+        }
+
+        .reply-card {
+            background: #f1f5f9;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .reply-style {
+            font-weight: bold;
+            color: #4f46e5;
+            margin-bottom: 4px;
+            display: inline-block;
+            background: #e0e7ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .reply-content {
+            color: #1e293b;
+        }
+
+        .loading {
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部标题区域：文字与图标 100% 视觉还原 -->
+    <div class="header-container">
+        <div class="header-title-wrapper">
+            <!-- 还原原图中的星芒/灵感图标样式 -->
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <h1>恋爱军师</h1>
+        </div>
+        <p>你的顶级僚机，破译TA的潜台词</p>
+    </div>
+
+    <!-- 核心对话卡片 -->
+    <div class="card-container">
+        <div class="input-label">
+            <i class="fa-solid fa-comment-alt"></i> 请输入女生的原话：
+        </div>
         
-        // 3. 解析 AI 返回的 JSON 内容
-        const aiContent = JSON.parse(data.choices[0].message.content);
+        <textarea id="userInput" placeholder="例如：女生说大姨妈来了..."></textarea>
+        
+        <button class="submit-btn" id="submitBtn">
+            <i class="fa-solid fa-bolt"></i> 局势诊断 & 绝杀回复
+        </button>
 
-        // 4. 返回给前端
-        res.status(200).json({ 
-            success: true, 
-            data: aiContent 
+        <!-- 加载中 -->
+        <div class="loading" id="loading">
+            <i class="fa-solid fa-spinner fa-spin"></i> 军师正在深度复盘局势，请稍候...
+        </div>
+
+        <!-- 结果区域 -->
+        <div class="result-box" id="resultBox">
+            <div class="section-title"><i class="fa-solid fa-brain"></i> 【军师分析】</div>
+            <p class="analysis-text" id="analysisText"></p>
+
+            <div class="section-title"><i class="fa-solid fa-shield-halved"></i> 【是否为测试】</div>
+            <p class="analysis-text" id="isTestText" style="display: inline-block; padding: 4px 12px; font-weight: bold;"></p>
+
+            <div class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> 【建议话术】</div>
+            <div id="repliesContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const userInput = document.getElementById('userInput').value.trim();
+            const loading = document.getElementById('loading');
+            const resultBox = document.getElementById('resultBox');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (!userInput) {
+                alert('请先输入女生的话！');
+                return;
+            }
+
+            loading.style.display = 'block';
+            resultBox.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.7';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userInput })
+                });
+
+                const resData = await response.json();
+
+                if (resData.success && resData.data) {
+                    const aiData = resData.data;
+                    document.getElementById('analysisText').innerText = aiData.analysis || '暂无深层分析';
+                    document.getElementById('isTestText').innerText = aiData.isTest || '否';
+                    
+                    if (aiData.isTest === '是') {
+                        document.getElementById('isTestText').style.color = '#ef4444';
+                        document.getElementById('isTestText').style.backgroundColor = '#fee2e2';
+                    } else {
+                        document.getElementById('isTestText').style.color = '#10b981';
+                        document.getElementById('isTestText').style.backgroundColor = '#ecfdf5';
+                    }
+
+                    const container = document.getElementById('repliesContainer');
+                    container.innerHTML = '';
+
+                    if (aiData.replies && aiData.replies.length > 0) {
+                        aiData.replies.forEach(item => {
+                            const replyCard = document.createElement('div');
+                            replyCard.className = 'reply-card';
+                            replyCard.innerHTML = `
+                                <span class="reply-style">[${item.style}]</span>
+                                <div class="reply-content">${item.content}</div>
+                            `;
+                            container.appendChild(replyCard);
+                        });
+                    } else {
+                        container.innerHTML = '<div class="reply-card">未生成有效话术</div>';
+                    }
+
+                    resultBox.style.display = 'block';
+                } else {
+                    alert('网络异常：' + (resData.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error(error);
+                alert('网络连接异常，请重试。');
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
         });
-
-    } catch (error) {
-        console.error("API Error:", error);
-        res.status(500).json({ success: false, message: "后端处理异常，请检查 API Key 或网络" });
-    }
-}
+    </script>
+</body>
+</html>
