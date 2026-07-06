@@ -1,229 +1,118 @@
-// api/chat.js
-
-function detectScene(text) {
-    const input = text.toLowerCase();
-
-    // 冷淡回复
-    const coldKeywords = [
-        "嗯",
-        "哦",
-        "噢",
-        "行",
-        "随便",
-        "哈哈",
-        "呵呵"
-    ];
-
-    // 疲惫场景
-    const fatigueKeywords = [
-        "累",
-        "加班",
-        "困",
-        "睡觉",
-        "疲惫",
-        "忙死",
-        "忙疯"
-    ];
-
-    if (coldKeywords.some(word => input.includes(word))) {
-        return "cold_reply";
-    }
-
-    if (fatigueKeywords.some(word => input.includes(word))) {
-        return "share_fatigue";
-    }
-
-    return "general";
-}
-
-function buildConvOSPrompt(userInput, scene) {
-
-    let sceneInstruction = "";
-
-    if (scene === "cold_reply") {
-        sceneInstruction = `
-场景：对方回复比较简短。
-
-目标：
-- 不追问
-- 不分析原因
-- 保持轻松
-- 给对方空间
-
-避免：
-- 怎么了？
-- 为什么这么冷淡？
-- 你是不是不开心？
-`;
-    }
-
-    if (scene === "share_fatigue") {
-        sceneInstruction = `
-场景：对方表达疲惫。
-
-目标：
-- 接住情绪
-- 表达关心
-- 不给建议
-- 不追问
-
-避免：
-- 为什么累？
-- 早点睡
-- 多喝热水
-`;
-    }
-
-    if (scene === "general") {
-        sceneInstruction = `
-场景：普通聊天。
-
-目标：
-- 自然
-- 真诚
-- 像真人
-`;
-    }
-
-    return `
-你是 Conversation Coach（聊天教练）。
-
-你的职责：
-
-帮助用户表达真实想表达的话。
-
-不是分析师。
-不是情感导师。
-不是心理学家。
-
-【核心原则】
-
-自然 > 精彩
-
-真诚 > 套路
-
-简短 > 长篇分析
-
-${sceneInstruction}
-
-请返回 JSON：
-
-{
-  "scene":"${scene}",
-  "replies":[
-    {
-      "style":"自然",
-      "content":"..."
-    },
-    {
-      "style":"轻松",
-      "content":"..."
-    },
-    {
-      "style":"温柔",
-      "content":"..."
-    }
-  ]
-}
-
-用户输入：
-
-${userInput}
-`;
-}
-
-export default async function handler(req, res) {
-
-    if (req.method !== 'POST') {
-        return res.status(405).json({
-            success: false,
-            message: "只支持 POST 请求"
-        });
-    }
-
-    const { userInput } = req.body;
-
-    if (!userInput) {
-        return res.status(400).json({
-            success: false,
-            message: "内容不能为空"
-        });
-    }
-
-    try {
-
-        const scene = detectScene(userInput);
-
-        const response = await fetch(
-            "https://api.deepseek.com/v1/chat/completions",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "deepseek-chat",
-                    messages: [
-                        {
-                            role: "system",
-                            content: buildConvOSPrompt(userInput, scene)
-                        },
-                        {
-                            role: "user",
-                            content: userInput
-                        }
-                    ],
-                    response_format: {
-                        type: "json_object"
-                    }
-                })
-            }
-        );
-
-        const data = await response.json();
-
-        let aiContent;
-
-        try {
-            aiContent = JSON.parse(
-                data.choices[0].message.content
-            );
-        } catch (e) {
-
-            aiContent = {
-                scene,
-                replies: [
-                    {
-                        style: "自然",
-                        content: "收到啦"
-                    },
-                    {
-                        style: "轻松",
-                        content: "慢慢来"
-                    },
-                    {
-                        style: "温柔",
-                        content: "别给自己太大压力"
-                    }
-                ]
-            };
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恋爱军师</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #f8f9fa; 
+            margin: 0; 
+            padding: 0; 
         }
+        .hero-section { 
+            text-align: center; 
+            padding: 60px 20px; 
+            background-color: #ffffff; 
+            border-bottom: 1px solid #eee; 
+        }
+        .brand-title { 
+            font-size: 2.5rem; 
+            color: #2D3436; 
+            margin: 0; 
+            letter-spacing: 2px; 
+        }
+        .slogan { 
+            font-size: 1.2rem; 
+            color: #636E72; 
+            margin-top: 20px; 
+            line-height: 1.6; 
+        }
+        .highlight { 
+            color: #6C5CE7; 
+            font-weight: 700; 
+            border-bottom: 2px solid #6C5CE7; 
+        }
+        .main-container { 
+            max-width: 600px; 
+            margin: 40px auto; 
+            padding: 0 20px; 
+        }
+        textarea { 
+            width: 100%; 
+            height: 120px; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 12px; 
+            box-sizing: border-box; 
+            font-size: 1rem; 
+        }
+        button { 
+            width: 100%; 
+            margin-top: 15px; 
+            padding: 15px; 
+            background: #6C5CE7; 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+        }
+        #result { 
+            margin-top: 30px; 
+            padding: 20px; 
+            background: white; 
+            border-radius: 12px; 
+            border: 1px solid #eee; 
+            white-space: pre-wrap; 
+            color: #2D3436; 
+            line-height: 1.6; 
+        }
+    </style>
+</head>
+<body>
 
-        return res.status(200).json({
-            success: true,
-            data: aiContent
-        });
+    <header class="hero-section">
+        <h1 class="brand-title">恋爱军师</h1>
+        <p class="slogan">
+            <span class="highlight">你的顶级僚机</span>，破译TA的<span class="highlight">潜台词</span>。
+        </p>
+    </header>
 
-    } catch (error) {
+    <main class="main-container">
+        <textarea id="userInput" placeholder="请输入对方发给你的话..."></textarea>
+        <button onclick="getAdvice()">局势诊断</button>
+        <div id="result">在这里查看军师的破译分析...</div>
+    </main>
 
-        console.error(error);
+    <script>
+        async function getAdvice() {
+            const input = document.getElementById('userInput').value;
+            const resultDiv = document.getElementById('result');
+            if (!input) return alert("请先输入内容！");
+            
+            resultDiv.innerText = "军师正在深度破译中，请稍候...";
 
-        return res.status(500).json({
-            success: false,
-            message: "服务器异常"
-        });
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userInput: input })
+                });
 
-    }
-
-}
+                const data = await response.json();
+                if (data.success) {
+                    const d = data.data;
+                    resultDiv.innerHTML = `<strong>【军师分析】</strong><br>${d.analysis}<br><br><strong>【测试类型】</strong><br>${d.isTest}<br><br><strong>【建议话术】</strong><br>${d.replies.map(r => `• [${r.style}] ${r.content}`).join('<br>')}`;
+                } else {
+                    resultDiv.innerText = "军师大脑塞车了，请检查 API 配置。";
+                }
+            } catch (e) {
+                resultDiv.innerText = "网络连接异常，请重试。";
+            }
+        }
+    </script>
+</body>
+</html>
