@@ -1,4 +1,4 @@
-/ api/chat.js
+// api/chat.js
 
 export default async function handler(req, res) {
     // 1. 只允许 POST 请求
